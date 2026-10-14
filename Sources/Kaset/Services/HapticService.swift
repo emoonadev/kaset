@@ -1,7 +1,11 @@
-import AppKit
+#if os(macOS)
+    import AppKit
+#else
+    import UIKit
+#endif
 
-/// Centralized service for haptic feedback on macOS.
-/// Uses the Force Touch trackpad via NSHapticFeedbackManager.
+/// Centralized service for haptic feedback.
+/// macOS uses the Force Touch trackpad via NSHapticFeedbackManager; iOS uses UIKit feedback generators.
 @MainActor
 enum HapticService {
     /// Types of haptic feedback mapped to user actions.
@@ -19,23 +23,44 @@ enum HapticService {
         /// Action failure.
         case error
 
-        /// Maps the feedback type to NSHapticFeedbackManager pattern.
-        fileprivate var pattern: NSHapticFeedbackManager.FeedbackPattern {
-            switch self {
-            case .playbackAction:
-                .generic
-            case .toggle:
-                .alignment
-            case .sliderBoundary:
-                .levelChange
-            case .navigation:
-                .alignment
-            case .success:
-                .generic
-            case .error:
-                .generic
+        #if os(macOS)
+            /// Maps the feedback type to NSHapticFeedbackManager pattern.
+            fileprivate var pattern: NSHapticFeedbackManager.FeedbackPattern {
+                switch self {
+                case .playbackAction:
+                    .generic
+                case .toggle:
+                    .alignment
+                case .sliderBoundary:
+                    .levelChange
+                case .navigation:
+                    .alignment
+                case .success:
+                    .generic
+                case .error:
+                    .generic
+                }
             }
-        }
+        #endif
+
+        #if os(iOS)
+            /// Maps the feedback type to a UIKit feedback generator call.
+            @MainActor
+            fileprivate func fire() {
+                switch self {
+                case .playbackAction:
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                case .toggle, .navigation:
+                    UISelectionFeedbackGenerator().selectionChanged()
+                case .sliderBoundary:
+                    UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                case .success:
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                case .error:
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                }
+            }
+        #endif
     }
 
     /// Whether haptic feedback is currently enabled.
@@ -47,9 +72,11 @@ enum HapticService {
         }
 
         // Respect system accessibility setting for reduced motion
-        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-            return false
-        }
+        #if os(macOS)
+            if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+                return false
+            }
+        #endif
 
         return true
     }
@@ -64,10 +91,14 @@ enum HapticService {
 
         DiagnosticsLogger.haptic.debug("Performing haptic feedback: \(String(describing: type))")
 
-        NSHapticFeedbackManager.defaultPerformer.perform(
-            type.pattern,
-            performanceTime: .now
-        )
+        #if os(macOS)
+            NSHapticFeedbackManager.defaultPerformer.perform(
+                type.pattern,
+                performanceTime: .now
+            )
+        #else
+            type.fire()
+        #endif
     }
 
     /// Performs haptic feedback for a playback action (play, pause, skip).

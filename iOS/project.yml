@@ -51,6 +51,18 @@ targets:
       - path: ../Sources/Kaset/Services/ErrorPresenter.swift
       - path: ../Sources/Kaset/Services/NetworkMonitor.swift
       - path: ../Sources/Kaset/Services/Protocols.swift
+      - path: ../Sources/Kaset/Services/PlayerServiceProtocol.swift
+      # S4: playback core.
+      - path: ../Sources/Kaset/Services/Player
+        excludes:
+          - YouTubePlayerService*.swift # video mode (D4); stubbed in KasetiOS/Platform/VideoModeStubs.swift
+          - PlayerService+QueuePlaylist.swift # save-queue-as-playlist needs LibraryMutationActions (S6)
+      - path: ../Sources/Kaset/Services/Notification
+      - path: ../Sources/Kaset/Services/HapticService.swift
+      - path: ../Sources/Kaset/Views
+        includes:
+          - SingletonPlayerWebView*.swift
+          - MiniPlayerWebView*.swift
       - path: ../Sources/Kaset/Services/SettingsManager.swift
       - path: ../Sources/Kaset/Services/FavoritesManager.swift
       - path: ../Sources/Kaset/Services/FavoritesManager+Convenience.swift

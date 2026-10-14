@@ -425,7 +425,9 @@ extension SingletonPlayerWebView {
             return
         }
 
-        AirPlayPickerAnchor.preparePicker(in: webView, at: screenPoint)
+        #if os(macOS)
+            AirPlayPickerAnchor.preparePicker(in: webView, at: screenPoint)
+        #endif
 
         let script = """
             (function() {

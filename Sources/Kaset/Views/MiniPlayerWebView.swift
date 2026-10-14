@@ -231,7 +231,13 @@ enum WebPlaybackTransitionFallbackPolicy {
 /// This is required because YouTube Music won't initialize the video player
 /// without user interaction - autoplay is blocked in hidden WebViews.
 /// Uses SingletonPlayerWebView for the actual WebView instance.
-struct MiniPlayerWebView: NSViewRepresentable {
+#if os(macOS)
+    private typealias MiniPlayerRepresentable = NSViewRepresentable
+#else
+    private typealias MiniPlayerRepresentable = UIViewRepresentable
+#endif
+
+struct MiniPlayerWebView: MiniPlayerRepresentable {
     @Environment(WebKitManager.self) private var webKitManager
     @Environment(PlayerService.self) private var playerService
     @Environment(AuthService.self) private var authService
@@ -257,6 +263,7 @@ struct MiniPlayerWebView: NSViewRepresentable {
         Coordinator(onStateChange: self.onStateChange, onMetadataChange: self.onMetadataChange)
     }
 
+#if os(macOS)
     func makeNSView(context: Context) -> NSView {
         let container = NSView(frame: .zero)
         container.wantsLayer = true
@@ -294,6 +301,44 @@ struct MiniPlayerWebView: NSViewRepresentable {
         SingletonPlayerWebView.shared.webView?.configuration.userContentController
             .removeScriptMessageHandler(forName: "miniPlayer")
     }
+#else
+    func makeUIView(context: Context) -> UIView {
+        let container = UIView(frame: .zero)
+
+        // Get or create the singleton WebView
+        let webView = SingletonPlayerWebView.shared.getWebView(
+            webKitManager: self.webKitManager,
+            playerService: self.playerService,
+            usesCookieFreeDataStore: self.authService.shouldUseCookieFreePlaybackDataStore
+        )
+
+        // Remove existing handler if present to avoid duplicates, then add fresh one
+        // This handles the case where makeNSView is called multiple times
+        let contentController = webView.configuration.userContentController
+        contentController.removeScriptMessageHandler(forName: "miniPlayer")
+        contentController.add(context.coordinator, name: "miniPlayer")
+
+        // Ensure WebView is in this container
+        SingletonPlayerWebView.shared.ensureInHierarchy(container: container)
+
+        // Load the video if needed
+        SingletonPlayerWebView.shared.loadVideo(videoId: self.videoId)
+
+        return container
+    }
+
+    func updateUIView(_ container: UIView, context _: Context) {
+        // Update WebView frame if needed
+        SingletonPlayerWebView.shared.ensureInHierarchy(container: container)
+    }
+
+    static func dismantleUIView(_: UIView, coordinator _: Coordinator) {
+        // WebView is managed by SingletonPlayerWebView.shared - it persists
+        // Remove the message handler to avoid duplicate handlers
+        SingletonPlayerWebView.shared.webView?.configuration.userContentController
+            .removeScriptMessageHandler(forName: "miniPlayer")
+    }
+#endif
 
     // MARK: - Coordinator
 
@@ -491,7 +536,7 @@ final class SingletonPlayerWebView {
 
     private(set) var webView: WKWebView?
     weak var webKitManager: WebKitManager?
-    private weak var currentContainer: NSView?
+    private weak var currentContainer: PlatformView?
     private var usesCookieFreeDataStore: Bool?
     var currentVideoId: String?
     var coordinator: Coordinator?
@@ -722,7 +767,7 @@ final class SingletonPlayerWebView {
     }
 
     /// Ensures the WebView is in the given container's view hierarchy.
-    func ensureInHierarchy(container: NSView) {
+    func ensureInHierarchy(container: PlatformView) {
         guard let webView else { return }
         self.currentContainer = container
         self.webKitManager?.extensionHostWebViewDidBecomeActive(webView)
@@ -733,7 +778,7 @@ final class SingletonPlayerWebView {
         // Use autoresizing to match container size (consistent with waitForValidBoundsAndInject)
         webView.translatesAutoresizingMaskIntoConstraints = true
         webView.frame = container.bounds
-        webView.autoresizingMask = [.width, .height]
+        webView.autoresizingMask = PlatformView.fillAutoresizing
 
         // Note: Don't re-inject CSS here if we're already in video mode.
         // Re-injecting causes the YouTube UI to briefly flicker back in because it
@@ -1314,6 +1359,21 @@ final class SingletonPlayerWebView {
             forMainFrameOnly: true
         )
         contentController.addUserScript(mediaControlBootstrapScript)
+
+        #if os(iOS)
+            // Lock-screen next/previous through the queue-aware bridge, and the keep-alive
+            // AudioContext that lets playback resume after a pause + lock (iOS only).
+            contentController.addUserScript(WKUserScript(
+                source: IOSPlaybackScripts.nextPreviousBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+            contentController.addUserScript(WKUserScript(
+                source: IOSPlaybackScripts.keepAlive,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+        #endif
 
         let playbackAudioQualityBootstrapScript = WKUserScript(
             source: self.playbackAudioQualityBootstrapScript(),

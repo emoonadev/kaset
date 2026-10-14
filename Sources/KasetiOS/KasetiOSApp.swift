@@ -1,29 +1,40 @@
 import SwiftUI
-import YouTubeAskCore // Linked to prove the shared package builds for iOS; it exposes no public API yet.
 
 /// Entry point of the Kaset iOS app.
 ///
-/// Step S1 of the iOS port only proves that the target builds and links the shared
-/// `YouTubeAskCore` library. The real shell arrives in step S7.
+/// Until the real shell lands (S7), the app hosts the playback lab so background playback
+/// can be verified on device (S4).
 @main
 struct KasetiOSApp: App {
+    @State private var authService: AuthService
+    @State private var webKitManager: WebKitManager
+    @State private var playerService: PlayerService
+    @State private var audioSession = AudioSessionController()
+
+    init() {
+        let auth = AuthService()
+        let webkit = WebKitManager.shared
+        let player = PlayerService()
+        let client = YTMusicClient(authService: auth, webKitManager: webkit)
+        player.setYTMusicClient(client)
+        player.setAuthService(auth)
+        PlayerService.shared = player
+
+        _authService = State(initialValue: auth)
+        _webKitManager = State(initialValue: webkit)
+        _playerService = State(initialValue: player)
+    }
+
     var body: some Scene {
         WindowGroup {
-            PlaceholderView()
+            PlayerLabView()
+                .environment(self.authService)
+                .environment(self.webKitManager)
+                .environment(self.playerService)
+                .environment(self.audioSession)
+                .task {
+                    self.audioSession.start(playerService: self.playerService)
+                }
         }
-    }
-}
-
-private struct PlaceholderView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "music.note")
-                .font(.system(size: 48))
-            Text("Kaset")
-                .font(.largeTitle.bold())
-            Text("iOS port — step S1")
-                .foregroundStyle(.secondary)
-        }
-        .padding()
     }
 }

@@ -63,3 +63,26 @@ extension Color {
         #endif
     }
 }
+
+extension PlatformView {
+    /// Autoresizing mask that tracks the superview's width and height.
+    static var fillAutoresizing: AutoresizingMask {
+        #if os(macOS)
+            [.width, .height]
+        #else
+            [.flexibleWidth, .flexibleHeight]
+        #endif
+    }
+}
+
+/// Cross-platform accessibility flags.
+enum PlatformAccessibility {
+    @MainActor
+    static var reduceMotion: Bool {
+        #if os(macOS)
+            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        #else
+            UIAccessibility.isReduceMotionEnabled
+        #endif
+    }
+}

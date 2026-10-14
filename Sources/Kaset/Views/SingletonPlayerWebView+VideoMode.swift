@@ -60,7 +60,7 @@ extension SingletonPlayerWebView {
         let maxAttempts = 20 // 2 seconds max (20 * 100ms)
         if let superview = webView.superview, superview.bounds.width > 0, superview.bounds.height > 0 {
             webView.frame = superview.bounds
-            webView.autoresizingMask = [.width, .height]
+            webView.autoresizingMask = PlatformView.fillAutoresizing
             self.injectVideoModeCSS()
         } else if attempts < maxAttempts {
             Task { @MainActor [weak self] in
@@ -71,7 +71,7 @@ extension SingletonPlayerWebView {
             // Fall back to current bounds anyway
             if let superview = webView.superview {
                 webView.frame = superview.bounds
-                webView.autoresizingMask = [.width, .height]
+                webView.autoresizingMask = PlatformView.fillAutoresizing
             }
             self.injectVideoModeCSS()
         }
