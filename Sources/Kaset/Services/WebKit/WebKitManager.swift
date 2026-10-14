@@ -265,6 +265,11 @@ final class WebKitManager: NSObject, WebKitManagerProtocol {
             // (and PiP when backgrounded) and the page never owns the lock-screen Now Playing item.
             configuration.allowsInlineMediaPlayback = true
             configuration.allowsPictureInPictureMediaPlayback = false
+            // The playback UA is the desktop one; without desktop content mode iPhone WebKit still
+            // lays the page out as mobile, so the player bar DOM and its Media Session never exist.
+            let preferences = WKWebpagePreferences()
+            preferences.preferredContentMode = .desktop
+            configuration.defaultWebpagePreferences = preferences
         #endif
 
         // Enable AirPlay for streaming to Apple TV, HomePod, etc.
