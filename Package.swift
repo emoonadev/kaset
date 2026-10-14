@@ -8,6 +8,8 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [
         .macOS("15.4"),
+        // iOS port (docs/ios/PLAN.md): only the shared YouTubeAskCore library is built for iOS from here.
+        .iOS("26.0"),
     ],
     products: [
         .executable(
@@ -17,6 +19,11 @@ let package = Package(
         .executable(
             name: "api-explorer",
             targets: ["APIExplorer"]
+        ),
+        // Foundation-only; also linked by the iOS app (iOS/project.yml).
+        .library(
+            name: "YouTubeAskCore",
+            targets: ["YouTubeAskCore"]
         ),
     ],
     dependencies: [
