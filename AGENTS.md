@@ -98,3 +98,7 @@ These are project-specific rules that differ from standard Swift/SwiftUI convent
 ## Task Planning
 
 For non-trivial tasks: **Research → Plan → Get approval → Implement → QA**. Run `swift build` continuously during implementation. If things go wrong, revert and re-scope rather than patching.
+
+## iOS Port (branch `feat/ios-port`)
+
+> 📱 **When working on the iOS port, read `docs/ios/TRACKER.md` first.** It holds the step-by-step protocol: when the human says "continue selon le plan", do only the first step that is not ✅, keep macOS and iOS builds green, commit + push to the `fork` remote, then stop and ask the human to verify and confirm before the next step. The plan is `docs/ios/PLAN.md`; decisions are in `docs/adr/0042-ios-port-and-background-playback.md`; spike evidence is in `docs/ios/spike-findings.md`.
