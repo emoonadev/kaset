@@ -82,6 +82,11 @@ Other facts: `PlayerService` and `WebKitManager` only use `NSObject` (portable);
 `Bundle.module` is not used directly (`PackageResourceLookup` finds the resource bundle);
 40 files already use `#available(macOS …)`.
 
+## Test cadence
+
+Full macOS suite only at checkpoints **S4, S7, S10, S13, S15**; other steps run builds, lint and focused
+tests for the macOS suites they touch. Known baseline failures are listed in `TRACKER.md`.
+
 ## Commands
 
 ```bash

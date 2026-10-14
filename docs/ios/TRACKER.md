@@ -19,6 +19,11 @@ Branch: `feat/ios-port` on `emoonadev/kaset`.
    - present a short summary and the verification checklist, then **stop**.
 4. A step becomes ✅ only when the user explicitly confirms it. Record the date.
 5. Never skip ahead, never merge two steps, never edit `main`.
+   **Test cadence (user decision, 2026-10-14):** the full macOS suite (`swift test --skip KasetUITests`) is
+   run only at the checkpoints **S4, S7, S10, S13, S15** (every 3–4 steps). Every other step runs
+   `swift build`, the iOS simulator build, `swiftlint` on touched files, and, when it edits existing macOS
+   files, a focused `swift test --filter <touched suites>`. Compare checkpoint results with the known
+   baseline below; only *new* failures block a step.
 6. If reality contradicts the plan (a step is bigger/different than described), stop, say
    so, and propose an amended plan — update `PLAN.md` in the same commit that changes course.
 
@@ -33,12 +38,18 @@ Branch: `feat/ios-port` on `emoonadev/kaset`.
 | D5 | iPhone first, iPad later | ✅ accepted 2026-10-14 |
 | D6 | Native vs page Now Playing | decided in S12 |
 
+## Test baseline (macOS, on `main` @ 83513f6, before any port change)
+
+`swift test --skip KasetUITests`: 3438 tests, **16 issues**, all pre-existing and unrelated to the port:
+`PlayerServiceQueueTests` (12) and `PlayerServiceWebQueueSyncTests` (4), caused by `UserDefaults`
+`kaset.saved.playbackSession` state shared between tests. Reproduced with the port changes stashed.
+
 ## Steps
 
 | ID | Step | Status | Commit | Excluded files | Confirmed |
 |---|---|---|---|---|---|
 | S0 | Plan, ADR, decisions | ✅ | 6e1e73b…b2846f5 | n/a | 2026-10-14 |
-| S1 | iOS target skeleton builds | 🟦 | _see Log_ | 0 (target compiles only `Sources/KasetiOS`) | |
+| S1 | iOS target skeleton builds | ✅ | 77bbc64 | 0 (target compiles only `Sources/KasetiOS`) | 2026-10-14 |
 | S2 | Shared Models + portable Utilities | ⬜ | | | |
 | S3 | Networking, auth, WebKit plumbing | ⬜ | | | |
 | S4 | Playback core + background audio on device | ⬜ | | | |
@@ -62,6 +73,7 @@ Models 45 · Services 148 · ViewModels 27 · Utilities 17 files.
 
 | Date | Step | Note |
 |---|---|---|
+| 2026-10-14 | S1 | Confirmed by the user. Test cadence set to every 3–4 steps (checkpoints S4, S7, S10, S13, S15). |
 | 2026-10-14 | S1 | Done, awaiting verification. `Package.swift`: `.iOS("26.0")` + `YouTubeAskCore` library product. New `iOS/project.yml` (XcodeGen) and `Sources/KasetiOS/KasetiOSApp.swift`. `swift build` ✅, iOS simulator build ✅. **Pre-existing failures on macOS tests**: 16 issues in `PlayerServiceQueueTests` / `PlayerServiceWebQueueSyncTests` (UserDefaults `kaset.saved.playbackSession` state shared between tests); reproduced identically with my changes stashed, so not caused by S1. `swiftformat` is not installed here, so formatting of the new file was not checked; `swiftlint` reports no violation in `Sources/KasetiOS` (30 pre-existing ones elsewhere). `$autoreview` skipped: config + placeholder only. `YouTubeAskCore` has no `public` API, so the iOS app only links it. |
 | 2026-10-14 | S0 | Tab structure fixed: Home · Discover (Explore/Charts/Moods/New releases) · Collections (Library/Liked music/History) · Search. Steps S10+ renumbered (+1) to add a Collections step. |
 | 2026-10-14 | S0 | Layout reference: Apple Music iOS 26 (tab bar + bottom accessory + minimize on scroll + zoom Now Playing). APIs verified in the iOS 27.0 SDK. D1 changed to iOS 26.0. |
