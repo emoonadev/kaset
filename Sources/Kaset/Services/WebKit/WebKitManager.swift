@@ -260,6 +260,13 @@ final class WebKitManager: NSObject, WebKitManagerProtocol {
         configuration.preferences.isElementFullscreenEnabled = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
 
+        #if os(iOS)
+            // Without inline playback iOS promotes the <video> to the system full-screen player
+            // (and PiP when backgrounded) and the page never owns the lock-screen Now Playing item.
+            configuration.allowsInlineMediaPlayback = true
+            configuration.allowsPictureInPictureMediaPlayback = false
+        #endif
+
         // Enable AirPlay for streaming to Apple TV, HomePod, etc.
         configuration.allowsAirPlayForMediaPlayback = true
 
