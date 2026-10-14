@@ -46,6 +46,24 @@ docs/ios/                 this plan, tracker, spike findings
 - iOS-only types (audio session, `UIViewRepresentable` host for the player web view,
   app environment, screens) live in `Sources/KasetiOS/`.
 
+### UI reuse (measured on `main` @ 83513f6)
+
+Rule for S7–S12: **reuse the leaves, rebuild the trunk.** Try to include the existing SwiftUI view
+files first (adapting layout with size classes / small `#if os()` blocks); write a new iOS view
+only when the macOS one is AppKit-bound or desktop-shaped.
+
+| Class | Files | Lines | Examples | iOS plan |
+|---|---|---|---|---|
+| A — no AppKit, ≤ 2 desktop-ish modifiers | 88 | 19.5k | `HomeView`, `LibraryView`, `PlaylistDetailView`, `ArtistDetailView`, `LyricsView`, `QueueView`, `LoginSheet`, `CarouselShelf`, `SongThumbnailView`, `LikeButton`, `ErrorView`, `ToastView` | Include; adapt padding/columns; swap `.help()` etc. Compile is not yet verified |
+| B — SwiftUI but desktop-leaning | 6 | 1.4k | `SearchView` (keyboard shortcuts), settings views (`.help`, fixed frames), `MoodCategoryDetailView` | Include with small edits |
+| C — AppKit-bound | 27 | 10.7k | `MainWindow`, `HomeItemCell`, `HomeItemCollectionShelf` (NSViewRepresentable, ADR-0038), `QueueSidePanelView`, `QueueTableCellView`, `MiniPlayerViews`, window controllers | Rewrite in SwiftUI for iOS |
+| Web/bridge/window (not UI) | 19 | 10.8k | `SingletonPlayerWebView*`, coordinators | Shared logic, handled in S4 |
+
+Caveats: the desktop shape (sidebar, hover, wide shelves, 1285-line horizontal `PlayerBar`) does not
+transfer to a phone — navigation shell, mini player, now-playing and Home shelves are new.
+Settings values live in `SettingsManager` (~25 `UserDefaults` keys, shared); the macOS settings
+views are plain SwiftUI `Form`/`Section` and are reused where possible.
+
 ### Inventory (measured on `main` @ 83513f6)
 
 | Area | Swift files | Importing AppKit | Notes |
@@ -216,7 +234,9 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 - `TabView`: Home · Search · Library; persistent mini player above the tab bar; now-playing sheet placeholder.
 - Launch routing: signed-out → sign-in; signed-in → tabs.
 - **Done when:** builds green.
-- **Verify (user):** launch, sign in, switch tabs, start a track from the debug entry, see the mini player persist across tabs and survive backgrounding.
+- Settings entry (gear in the tab bar / profile menu) opening a `Form` backed by the shared `SettingsManager`
+  — minimal at first (appearance, audio quality, content language, haptics) so settings exist from the shell on.
+- **Verify (user):** launch, sign in, switch tabs, start a track from the debug entry, see the mini player persist across tabs and survive backgrounding; open Settings and change a value that survives relaunch.
 
 ---
 
@@ -255,7 +275,12 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 ### S12 — Settings, account, polish
 
-- Settings (audio quality, content language, sign out, account switcher), localization catalog + `.lproj` parity
+- Complete the Settings screen (audio quality, content language, smart shuffle, synced lyrics, haptics, sign out,
+  account switcher) and the **iOS behaviour toggles** — new `SettingsManager` keys read by the native layer and
+  by the injected page script, each with a localized label and footer text. Candidates:
+  *skip ads when possible* (off by default, see Backlog caveat), *resume playback after interruption*,
+  *keep playing when headphones disconnect* (default pause), *show now-playing artwork on lock screen*,
+  *diagnostics log* (debug). Localization catalog + `.lproj` parity
   (`swift test --filter LocalizationCatalogParityTests`), Dynamic Type, VoiceOver labels, dark mode, haptics.
 - **Verify (user):** navigate in two languages; VoiceOver on the player; large text.
 
