@@ -1,4 +1,6 @@
-import AppKit
+#if os(macOS)
+    import AppKit
+#endif
 import Foundation
 import os
 import WebKit
@@ -24,7 +26,7 @@ enum WebExtensionHostedWebViewRole: String {
     }
 }
 
-#if compiler(>=5.9)
+#if compiler(>=5.9) && os(macOS)
     @available(macOS 15.4, *)
     @MainActor
     final class KasetWebExtensionHost {
@@ -309,5 +311,29 @@ enum WebExtensionHostedWebViewRole: String {
             }
             return nil
         }
+    }
+#endif
+
+#if os(iOS)
+    /// iOS has no tab/window model for web extensions (D4: no extensions in v1); every call is a no-op.
+    @available(iOS 18.4, *)
+    @MainActor
+    final class KasetWebExtensionHost {
+        init(controller _: WKWebExtensionController, logger _: Logger = DiagnosticsLogger.extensions) {}
+
+        var openWindows: [any WKWebExtensionWindow] {
+            []
+        }
+
+        var focusedWindow: (any WKWebExtensionWindow)? {
+            nil
+        }
+
+        func register(webView _: WKWebView, role _: WebExtensionHostedWebViewRole) {}
+        func noteNavigationStarted(for _: WKWebView, pendingURL _: URL?) {}
+        func noteBecameActive(webView _: WKWebView) {}
+        func unregister(role _: WebExtensionHostedWebViewRole) {}
+        func noteNavigationFinished(for _: WKWebView) {}
+        func noteNavigationFailed(for _: WKWebView) {}
     }
 #endif

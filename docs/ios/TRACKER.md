@@ -50,8 +50,8 @@ Branch: `feat/ios-port` on `emoonadev/kaset`.
 |---|---|---|---|---|---|
 | S0 | Plan, ADR, decisions | ✅ | 6e1e73b…b2846f5 | n/a | 2026-10-14 |
 | S1 | iOS target skeleton builds | ✅ | 77bbc64 | 0 (target compiles only `Sources/KasetiOS`) | 2026-10-14 |
-| S2 | Shared Models + portable Utilities | 🟦 | (this commit) | 8 (Models: AI, YouTube; Utilities: 6 files) | |
-| S3 | Networking, auth, WebKit plumbing | ⬜ | | | |
+| S2 | Shared Models + portable Utilities | ✅ | 675c160 | 8 (Models: AI, YouTube; Utilities: 6 files) | 2026-10-14 |
+| S3 | Networking, auth, WebKit plumbing | 🟦 | (see log) | 8 + Services/{API YouTube parts, LibraryMutationActions, Notification, ExtensionsManager (stubbed)} | |
 | S4 | Playback core + background audio on device | ⬜ | | | |
 | S5 | Sign-in and session persistence | ⬜ | | | |
 | S6 | ViewModels and real data | ⬜ | | | |
@@ -73,6 +73,7 @@ Models 45 · Services 148 · ViewModels 27 · Utilities 17 files.
 
 | Date | Step | Note |
 |---|---|---|
+| 2026-10-14 | S3 | Done, awaiting verification. iOS target now compiles `Services/{API, Auth, WebKit, Library}` + `Protocols`, `SettingsManager`, favorites/like managers, `NetworkMonitor`, `ErrorPresenter`. Macos-side edits are moves/guards only: `NavigationItem` moved from `MainWindow.swift` to `Models/NavigationItem.swift`; `PlayerServiceProtocol` split out of `Protocols.swift` into its own file; `WebExtensionHost.swift` guarded by `os(macOS)` with an iOS no-op host; iOS-only `ExtensionsManager` stub in `Sources/KasetiOS/Platform`. Excluded for now: video (`YouTubeClient*`, `Parsers/YouTube`, D4), `LibraryMutationActions` (needs ViewModels, S6), `NotificationService` (needs PlayerService, S4), mocks. Cookie storage untouched (Keychain path to be exercised in S5). `swift build` ✅, iOS build ✅, 205 focused tests ✅, no new swiftlint violation (30 pre-existing). |
 | 2026-10-14 | S2 | Done, awaiting verification. New `Utilities/Platform.swift` (`PlatformImage/Color/View` + helpers). `AppAppearance`, `ColorExtractor`, `ImageCache`, `PackageResourceLookup` made portable (macOS code paths unchanged, iOS via `#if`). iOS target now compiles `Models` (minus `AI`, `YouTube`) and `Utilities` (minus `MainWindowLayout`, `TextInputFocusState`, `PlayerBarLayout`, `LiquidGlassCompat`, `IntelligenceModifier`, `AccessibilityIdentifiers`) plus `ParsingHelpers*` and `LibraryContentIdentity`. `Models/YouTube` stays out: it uses `package`-access types of `YouTubeAskCore`, which the Xcode project cannot see (video mode is out of v1 scope anyway). `swift build` ✅, iOS simulator build ✅, focused tests (13) ✅, swiftlint 0 violations. `$autoreview` skipped: mechanical typealias refactor. |
 | 2026-10-14 | S1 | Confirmed by the user. Test cadence set to every 3–4 steps (checkpoints S4, S7, S10, S13, S15). |
 | 2026-10-14 | S1 | Done, awaiting verification. `Package.swift`: `.iOS("26.0")` + `YouTubeAskCore` library product. New `iOS/project.yml` (XcodeGen) and `Sources/KasetiOS/KasetiOSApp.swift`. `swift build` ✅, iOS simulator build ✅. **Pre-existing failures on macOS tests**: 16 issues in `PlayerServiceQueueTests` / `PlayerServiceWebQueueSyncTests` (UserDefaults `kaset.saved.playbackSession` state shared between tests); reproduced identically with my changes stashed, so not caused by S1. `swiftformat` is not installed here, so formatting of the new file was not checked; `swiftlint` reports no violation in `Sources/KasetiOS` (30 pre-existing ones elsewhere). `$autoreview` skipped: config + placeholder only. `YouTubeAskCore` has no `public` API, so the iOS app only links it. |

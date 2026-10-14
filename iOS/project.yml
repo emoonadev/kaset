@@ -33,10 +33,28 @@ targets:
           - LiquidGlassCompat.swift # macOS 15 fallback; iOS 26 uses glassEffect directly
           - IntelligenceModifier.swift # needs FoundationModelsService (D4)
           - AccessibilityIdentifiers.swift # extends a type declared in a macOS view; revisit in S7
-      # Small service files the shared Models depend on.
-      - path: ../Sources/Kaset/Services/API/Parsers/ParsingHelpers.swift
-      - path: ../Sources/Kaset/Services/API/Parsers/ParsingHelpers+Metadata.swift
-      - path: ../Sources/Kaset/Services/Library/LibraryContentIdentity.swift
+      # S3: networking, auth, WebKit plumbing and the small managers around them.
+      - path: ../Sources/Kaset/Services/API
+        excludes:
+          - MockUITest*
+          - Parsers/YouTube # video mode is out of v1 scope (D4)
+          - YouTubeClient.swift
+          - YouTubeClient+Ask.swift
+          - YouTubeAskTransport.swift
+          - YouTubeAskMessageIDGenerator.swift
+      - path: ../Sources/Kaset/Services/Auth
+      - path: ../Sources/Kaset/Services/WebKit
+      - path: ../Sources/Kaset/Services/Library
+        excludes:
+          - LibraryMutationActions.swift # needs ViewModels (S6)
+      - path: ../Sources/Kaset/Views/YouTube/AmbientBackdropStyle.swift
+      - path: ../Sources/Kaset/Services/ErrorPresenter.swift
+      - path: ../Sources/Kaset/Services/NetworkMonitor.swift
+      - path: ../Sources/Kaset/Services/Protocols.swift
+      - path: ../Sources/Kaset/Services/SettingsManager.swift
+      - path: ../Sources/Kaset/Services/FavoritesManager.swift
+      - path: ../Sources/Kaset/Services/FavoritesManager+Convenience.swift
+      - path: ../Sources/Kaset/Services/SongLikeStatusManager.swift
     dependencies:
       - package: Kaset
         product: YouTubeAskCore
