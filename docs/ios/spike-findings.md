@@ -18,6 +18,24 @@ accounts, tests of 5–10 minutes.
 | `spoofVisibility`, `resumeOnBackground` workarounds | Not needed | Playback and queue advance worked with both off |
 | Native `MPRemoteCommandCenter` play/pause (experiment B) | **Inconclusive, not needed** | No `[remote] native …` lines in the supplied log |
 
+## Extended run (13 min, screen locked, 21 tracks)
+
+`bg=782s`, `tracks=21`, `ended=3`, `hb=131`, `maxJSGap=6s`, `nativeTicks=153`, `maxNativeGap=5s`.
+Rapid lock-screen next presses (≈2 s apart) each advanced the track. Playback, queue
+advance and lock-screen next/previous are solid over this duration.
+
+One failure, reproducible by this sequence: **pause in the foreground → immediately lock/background**.
+`AudioContext` went `interrupted` on `didEnterBackground`, no `pause` event followed (it had
+already fired in the foreground), so nothing re-resumed it, and the whole app was suspended:
+`[native] GAP 144s (app was suspended)`, `[js] GAP 145s`. When the pause happened while already
+in the background, the page's `pause` listener resumed the context (`interrupted → running`)
+and everything stayed alive. Hypothesis (untested): resume the context from `statechange` and
+`visibilitychange` as well, not only from `playing`/`pause`.
+
+Ads: both times the media pause fired at `didEnterBackground` (`vis=hidden`) the item playing
+was an ad (6 s and 30 s creatives); regular tracks never paused on backgrounding. Ads appear to
+require a visible page.
+
 ## What to carry into the app
 
 ### 1. Audio session
@@ -54,6 +72,16 @@ const ensure = () => {
 };
 document.addEventListener('playing', ensure, true);
 document.addEventListener('pause', () => { if (ctx && ctx.state !== 'running') { ctx.resume().catch(() => {}); } }, true);
+```
+
+Needed in addition, **not yet validated** (see "Extended run"): re-resume when the context
+becomes `interrupted`/`suspended` and when the page becomes hidden:
+
+```js
+ctx.onstatechange = () => {
+  if (ctx.state === 'interrupted' || ctx.state === 'suspended') { ctx.resume().catch(() => {}); }
+};
+window.addEventListener('visibilitychange', ensure, true);
 ```
 
 Observed: the context goes `interrupted` when the app enters the background and returns

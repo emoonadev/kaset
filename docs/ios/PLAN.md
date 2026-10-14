@@ -163,7 +163,9 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
   route-change handling (resume per `shouldResume`).
 - Observer script: add an **iOS-only** block (behind a flag, so macOS is unchanged) with the
   keep-alive `AudioContext` and Media Session handlers from the spike findings.
-  Do not release the output context on pause on iOS.
+  Do not release the output context on pause on iOS. Also re-resume it on `statechange`
+  (`interrupted`/`suspended`) and `visibilitychange`: pausing in the foreground and then
+  locking suspended the whole app in the extended spike run (see spike findings).
 - iOS user agent handling per [spike findings §4](spike-findings.md#4-user-agents).
 - `Sources/KasetiOS/Debug/PlayerLabView.swift` (debug builds): enter a video/playlist id, play,
   next/previous, live state, and the file log from the spike.
@@ -172,7 +174,9 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
   1. play a playlist, lock the screen 5 min: audio continues and tracks advance;
   2. pause from lock screen, wait 3 min screen off, play: resumes;
   3. next / previous from lock screen change the track;
-  4. same with the 1×1 hidden web view (this is the default here).
+  4. same with the 1×1 hidden web view (this is the default here);
+  5. pause in the foreground, then lock immediately, wait 3 min, press play on the lock screen: resumes
+     (this is the case that failed in the spike).
 
 ---
 
@@ -274,6 +278,11 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 ---
 
 ## Backlog (not scheduled)
+
+Ads (free / logged-out accounts): Kaset already detects them (`PlaybackAdDetectionScript`,
+`isAd` in the bridge payloads, "Ad" badge in the player bar) but does not skip them. Ads seem to
+pause when the page becomes hidden. An opt-in "skip ads when possible" setting is possible but
+works against YouTube's terms and could put the account at risk; off by default if ever added.
 
 iPad adaptive layout · YouTube video mode · synced lyrics · scrobbling · Ask/AI (Foundation Models, iOS 26) ·
 Widgets / Live Activities · App Intents / Shortcuts · offline queue persistence improvements ·
