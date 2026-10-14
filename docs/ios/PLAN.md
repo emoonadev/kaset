@@ -102,7 +102,7 @@ Device runs are done by the user from Xcode (Team + signing are theirs).
 
 | ID | Decision | Recommendation |
 |---|---|---|
-| D1 | Minimum iOS | **iOS 18.0**; `#available(iOS 26, *)` for Liquid Glass. macOS side stays 15.4. |
+| D1 | Minimum iOS | **iOS 26.0** (changed from 18.0): the Apple Music–style tab bar + bottom accessory (`tabViewBottomAccessory`, `tabBarMinimizeBehavior`) is iOS 26-only. Personal sideloaded build, so no back-deployment needed. macOS side stays 15.4. |
 | D2 | Project generator | **XcodeGen** (dev tool only, not shipped; same as the spike). `.xcodeproj` git-ignored. |
 | D3 | Bundle ID / name | **`dev.emoona.kaset`**, display name **Kaset**. Different from upstream `com.sertacozercan.Kaset` so sessions never collide. |
 | D4 | v1 scope | YouTube Music only: sign-in, Home, Search, Library, Playlist/Album/Artist, Now Playing, Queue, lock-screen controls. **Out of v1:** YouTube video mode, Ask/AI, extensions, EQ, scripting, scrobbling, synced lyrics. |
@@ -129,7 +129,7 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 **Goal:** an empty iOS app builds from the same repo; macOS untouched.
 
-- `Package.swift`: add `.iOS("18.0")` to `platforms`; add `.library(name: "YouTubeAskCore", targets: ["YouTubeAskCore"])`.
+- `Package.swift`: add `.iOS("26.0")` to `platforms`; add `.library(name: "YouTubeAskCore", targets: ["YouTubeAskCore"])`.
 - `iOS/project.yml`: app target `KasetiOS`, bundle id per D3, `UIBackgroundModes=[audio]`,
   `UIFileSharingEnabled=true` (debug log access), local package dependency on the repo root
   for `YouTubeAskCore`, `.gitignore` entry for `iOS/KasetiOS.xcodeproj`.
@@ -231,7 +231,14 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 - `AppEnvironment` (iOS): builds and owns the services that `KasetApp` creates today
   (`AuthService`, `PlayerService`, `PlaybackArbiter`, clients, managers) — a trimmed copy, not a refactor of `KasetApp`.
-- `TabView`: Home · Search · Library; persistent mini player above the tab bar; now-playing sheet placeholder.
+- **Apple Music–style shell** (reference: Apple Music on iOS 26):
+  - `TabView` with `Tab("Home")`, `Tab("Library")` and `Tab(role: .search)` (search tab detaches to the trailing circle);
+  - `.tabViewBottomAccessory { MiniPlayer() }` for the mini player; read
+    `@Environment(\.tabViewBottomAccessoryPlacement)` (`.expanded` / `.inline`) to switch between the full pill
+    (artwork, title, artist, play, next) and the compact inline pill (artwork, title, play);
+  - `.tabBarMinimizeBehavior(.onScrollDown)` so the tab bar collapses to circle + pill + circle while scrolling;
+  - tapping the accessory presents Now Playing with `matchedTransitionSource` + `.navigationTransition(.zoom(...))`;
+  - `.glassEffect()` / system Liquid Glass materials only, no custom blur backgrounds.
 - Launch routing: signed-out → sign-in; signed-in → tabs.
 - **Done when:** builds green.
 - Settings entry (gear in the tab bar / profile menu) opening a `Form` backed by the shared `SettingsManager`
@@ -257,7 +264,9 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 ### S10 — Now Playing and Queue
 
-- Full-screen Now Playing: artwork, title/artist links, scrubber with seek, transport, like, repeat/shuffle,
+- Full-screen Now Playing (Apple Music layout: large artwork, title/artist + `…` menu, scrubber with elapsed/remaining,
+  rewind / play-pause / forward, volume, lyrics · AirPlay · queue row; background tinted from the artwork via `ColorExtractor`),
+  with title/artist links, scrubber with seek, transport, like, repeat/shuffle,
   queue sheet with reorder/remove, share.
 - **Verify (user):** every control; seek while paused and playing; queue edits are honoured by the next track advance.
 

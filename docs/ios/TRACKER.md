@@ -26,7 +26,7 @@ Branch: `feat/ios-port` on `emoonadev/kaset`.
 
 | ID | Decision | Status |
 |---|---|---|
-| D1 | Minimum iOS 18.0 | ⬜ awaiting user |
+| D1 | Minimum iOS **26.0** (was 18.0; needed for the Apple Music–style bottom accessory) | ⬜ awaiting user |
 | D2 | XcodeGen for the iOS project | ⬜ awaiting user |
 | D3 | Bundle id `dev.emoona.kaset`, name "Kaset" | ⬜ awaiting user |
 | D4 | v1 scope: YouTube Music only (no video mode, AI, extensions, EQ, scripting, scrobbling) | ⬜ awaiting user |
@@ -61,6 +61,7 @@ Models 45 · Services 148 · ViewModels 27 · Utilities 17 files.
 
 | Date | Step | Note |
 |---|---|---|
+| 2026-10-14 | S0 | Layout reference: Apple Music iOS 26 (tab bar + bottom accessory + minimize on scroll + zoom Now Playing). APIs verified in the iOS 27.0 SDK. D1 changed to iOS 26.0. |
 | 2026-10-14 | S0 | UI reuse measured (88 files/19.5k lines ready, 6 desktop-leaning, 27 AppKit-bound); settings screen moved into the S7 shell, behaviour toggles (incl. opt-in ad skip) specified in S12. |
 | 2026-10-14 | S0 | (extended spike run) 13 min locked, 21 tracks, no app suspension except the *pause in foreground then lock* case; ads pause on backgrounding. Findings added to spike-findings.md. |
 | 2026-10-14 | S0 | Spike validated background playback, queue advance, lock-screen next/previous (Media Session), pause/resume (keep-alive AudioContext), hidden 1×1 web view. Fork `emoonadev/kaset` created, branch `feat/ios-port` pushed. Plan, tracker and ADR written. |
