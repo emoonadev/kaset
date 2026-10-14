@@ -48,7 +48,7 @@ docs/ios/                 this plan, tracker, spike findings
 
 ### UI reuse (measured on `main` @ 83513f6)
 
-Rule for S7–S12: **reuse the leaves, rebuild the trunk.** Try to include the existing SwiftUI view
+Rule for S7–S13: **reuse the leaves, rebuild the trunk.** Try to include the existing SwiftUI view
 files first (adapting layout with size classes / small `#if os()` blocks); write a new iOS view
 only when the macOS one is AppKit-bound or desktop-shaped.
 
@@ -107,7 +107,7 @@ Device runs are done by the user from Xcode (Team + signing are theirs).
 | D3 | Bundle ID / name | **`dev.emoona.kaset`**, display name **Kaset**. Different from upstream `com.sertacozercan.Kaset` so sessions never collide. |
 | D4 | v1 scope | YouTube Music only: sign-in, Home, Search, Library, Playlist/Album/Artist, Now Playing, Queue, lock-screen controls. **Out of v1:** YouTube video mode, Ask/AI, extensions, EQ, scripting, scrobbling, synced lyrics. |
 | D5 | Device family | **iPhone first.** iPad adaptive layout is backlog. |
-| D6 | Native vs page Now Playing | Decided by evidence in S11 (see ADR "Not decided here"). |
+| D6 | Native vs page Now Playing | Decided by evidence in S12 (see ADR "Not decided here"). |
 
 ## Steps
 
@@ -232,7 +232,10 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 - `AppEnvironment` (iOS): builds and owns the services that `KasetApp` creates today
   (`AuthService`, `PlayerService`, `PlaybackArbiter`, clients, managers) — a trimmed copy, not a refactor of `KasetApp`.
 - **Apple Music–style shell** (reference: Apple Music on iOS 26):
-  - `TabView` with `Tab("Home")`, `Tab("Library")` and `Tab(role: .search)` (search tab detaches to the trailing circle);
+  - `TabView` with four tabs — **Home**, **Discover**, **Collections**, **Search**:
+    `Tab("Home", systemImage: "house")`, `Tab("Discover", systemImage: "safari")`,
+    `Tab("Collections", systemImage: "rectangle.stack")` and `Tab(role: .search)` (detaches to the trailing circle).
+    Discover and Collections each host a segmented control (see S9, S10); every tab owns its own `NavigationStack`;
   - `.tabViewBottomAccessory { MiniPlayer() }` for the mini player; read
     `@Environment(\.tabViewBottomAccessoryPlacement)` (`.expanded` / `.inline`) to switch between the full pill
     (artwork, title, artist, play, next) and the compact inline pill (artwork, title, play);
@@ -249,20 +252,42 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 ### S8 — Home and Search screens
 
-- Home shelves (carousels, cards, pull to refresh, load-more), Search with suggestions and result sections.
+- **Home = the same Home as macOS**: same `HomeViewModel` and `HomeView` sections (shelves, cards, pull to refresh,
+  load-more). Only the AppKit shelf (`HomeItemCollectionShelf`, ADR-0038) is replaced by a SwiftUI horizontal shelf.
+- Search tab with suggestions and result sections (`SearchViewModel`, `SearchView`, `.searchable`).
 - Reuse shared item context menus where portable (`Views/SharedViews/*` are macOS; write iOS equivalents).
 - **Verify (user):** scroll Home, search, play from results, add to queue / play next from a context menu.
 
 ---
 
-### S9 — Library and detail screens
+### S9 — Discover tab
 
-- Library (playlists, albums, artists, liked songs), Playlist/Album/Artist detail with play/shuffle, like, share.
-- **Verify (user):** open each type, play all, shuffle, like a song, state reflected after relaunch.
+**Goal:** the Discover tab with a segmented control, reusing the macOS view models.
+
+- Segmented `Picker` (`.pickerStyle(.segmented)`, pinned under the large title): **Explore · Charts · Moods · New releases**.
+- Segment content: `ExploreView`/`ExploreViewModel`, `ChartsView`/`ChartsViewModel`,
+  `MoodsAndGenresView`/`MoodsAndGenresViewModel` (+ `MoodCategoryDetailView`), `NewReleasesView`/`NewReleasesViewModel`.
+- Each segment keeps its own scroll position and loaded state when switching; the selected segment survives relaunch.
+- **Verify (user):** switch segments, scroll, pull to refresh, open a chart entry / mood / release, play from each, tab bar minimizes on scroll in every segment.
 
 ---
 
-### S10 — Now Playing and Queue
+### S10 — Collections tab and detail screens
+
+**Goal:** the Collections tab with a segmented control, plus the detail screens reachable from everywhere.
+
+- Segmented `Picker`: **Library · Liked music · History**.
+- Segment content: `LibraryView`/`LibraryViewModel` (playlists, albums, artists),
+  Liked music = `PlaylistDetailView` driven by the liked-music `PlaylistDetailViewModel` (same as macOS `NavigationItem.likedMusic`),
+  `HistoryView`/`HistoryViewModel`. Signed-out state shows `SignInRequiredView`.
+- Playlist / Album / Artist detail screens (`PlaylistDetailView`, `ArtistDetailView`, discography) pushed from any tab,
+  with play / shuffle, like, share, add to library.
+- Podcasts are not in the tab bar (kept out of v1, see Backlog).
+- **Verify (user):** open each segment, play all, shuffle, like a song and see it appear in Liked music, history updates after playing, state survives relaunch.
+
+---
+
+### S11 — Now Playing and Queue
 
 - Full-screen Now Playing (Apple Music layout: large artwork, title/artist + `…` menu, scrubber with elapsed/remaining,
   rewind / play-pause / forward, volume, lyrics · AirPlay · queue row; background tinted from the artwork via `ColorExtractor`),
@@ -272,7 +297,7 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 ---
 
-### S11 — System integration
+### S12 — System integration
 
 - Lock screen / Control Center / AirPods: artwork, title, elapsed time, next/previous/play/pause, scrubbing.
   Decide native `NowPlayingManager` vs page Media Session with a measured comparison; record it in ADR-0042.
@@ -282,7 +307,7 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 ---
 
-### S12 — Settings, account, polish
+### S13 — Settings, account, polish
 
 - Complete the Settings screen (audio quality, content language, smart shuffle, synced lyrics, haptics, sign out,
   account switcher) and the **iOS behaviour toggles** — new `SettingsManager` keys read by the native layer and
@@ -295,7 +320,7 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 ---
 
-### S13 — Hardening
+### S14 — Hardening
 
 - Long sessions (≥ 60 min screen locked), memory/battery measurement (keep-alive `AudioContext` cost),
   WebContent termination → restore position and queue, expired stream recovery, network change/offline, cold start with restored playback.
@@ -303,7 +328,7 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 ---
 
-### S14 — Docs, CI, distribution
+### S15 — Docs, CI, distribution
 
 - `docs/ios/README.md` (build, sideload via Xcode/AltStore, signing limits of free accounts), CHANGELOG/README mention,
   optional GitHub Actions job building the iOS simulator target.
@@ -313,6 +338,7 @@ Status values: ⬜ todo · 🟨 in progress · 🟦 awaiting user verification �
 
 ## Backlog (not scheduled)
 
+Podcasts tab/segment (macOS has `PodcastsView`; needs the availability service) ·
 Ads (free / logged-out accounts): Kaset already detects them (`PlaybackAdDetectionScript`,
 `isAd` in the bridge payloads, "Ad" badge in the player bar) but does not skip them. Ads seem to
 pause when the page becomes hidden. An opt-in "skip ads when possible" setting is possible but

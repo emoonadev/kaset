@@ -56,9 +56,9 @@ summarised in [`docs/ios/spike-findings.md`](../ios/spike-findings.md).
 ### Negative
 
 - A permanently-running `AudioContext` costs battery. It has not been measured yet
-  (step S13).
+  (step S14).
 - iOS may still terminate the WebContent process under memory pressure; recovery
-  needs explicit handling (step S13).
+  needs explicit handling (step S14).
 - The shared-source target compiles with a long exclude list at first, which is
   noisy until the burn-down finishes.
 - `Sources/Kaset/Views/MiniPlayerWebView.swift` mixes the platform-independent
@@ -69,5 +69,5 @@ summarised in [`docs/ios/spike-findings.md`](../ios/spike-findings.md).
 
 - Whether the native `NowPlayingManager` or page-level Media Session owns lock-screen
   metadata on iOS. The spike proved the page-level route; the native route is untested
-  (step S11 decides with evidence).
+  (step S12 decides with evidence).
 - iPad layout, CarPlay (needs an Apple entitlement), YouTube video mode.

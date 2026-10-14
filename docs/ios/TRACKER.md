@@ -31,7 +31,7 @@ Branch: `feat/ios-port` on `emoonadev/kaset`.
 | D3 | Bundle id `dev.emoona.kaset`, name "Kaset" | ⬜ awaiting user |
 | D4 | v1 scope: YouTube Music only (no video mode, AI, extensions, EQ, scripting, scrobbling) | ⬜ awaiting user |
 | D5 | iPhone first, iPad later | ⬜ awaiting user |
-| D6 | Native vs page Now Playing | decided in S11 |
+| D6 | Native vs page Now Playing | decided in S12 |
 
 ## Steps
 
@@ -46,12 +46,13 @@ Branch: `feat/ios-port` on `emoonadev/kaset`.
 | S6 | ViewModels and real data | ⬜ | | | |
 | S7 | App shell (tabs + mini player) | ⬜ | | | |
 | S8 | Home and Search | ⬜ | | | |
-| S9 | Library and detail screens | ⬜ | | | |
-| S10 | Now Playing and Queue | ⬜ | | | |
-| S11 | System integration (lock screen, interruptions, routes) | ⬜ | | | |
-| S12 | Settings, account, polish | ⬜ | | | |
-| S13 | Hardening (long sessions, recovery, battery) | ⬜ | | | |
-| S14 | Docs, CI, distribution | ⬜ | | | |
+| S9 | Discover tab (Explore · Charts · Moods · New releases) | ⬜ | | | |
+| S10 | Collections tab (Library · Liked music · History) + detail screens | ⬜ | | | |
+| S11 | Now Playing and Queue | ⬜ | | | |
+| S12 | System integration (lock screen, interruptions, routes) | ⬜ | | | |
+| S13 | Settings, account, polish | ⬜ | | | |
+| S14 | Hardening (long sessions, recovery, battery) | ⬜ | | | |
+| S15 | Docs, CI, distribution | ⬜ | | | |
 
 "Excluded files" = number of entries/globs still excluded from the iOS target in
 `iOS/project.yml` (the burn-down). Baseline for the shared directories on `main`:
@@ -61,7 +62,8 @@ Models 45 · Services 148 · ViewModels 27 · Utilities 17 files.
 
 | Date | Step | Note |
 |---|---|---|
+| 2026-10-14 | S0 | Tab structure fixed: Home · Discover (Explore/Charts/Moods/New releases) · Collections (Library/Liked music/History) · Search. Steps S10+ renumbered (+1) to add a Collections step. |
 | 2026-10-14 | S0 | Layout reference: Apple Music iOS 26 (tab bar + bottom accessory + minimize on scroll + zoom Now Playing). APIs verified in the iOS 27.0 SDK. D1 changed to iOS 26.0. |
-| 2026-10-14 | S0 | UI reuse measured (88 files/19.5k lines ready, 6 desktop-leaning, 27 AppKit-bound); settings screen moved into the S7 shell, behaviour toggles (incl. opt-in ad skip) specified in S12. |
+| 2026-10-14 | S0 | UI reuse measured (88 files/19.5k lines ready, 6 desktop-leaning, 27 AppKit-bound); settings screen moved into the S7 shell, behaviour toggles (incl. opt-in ad skip) specified in S13. |
 | 2026-10-14 | S0 | (extended spike run) 13 min locked, 21 tracks, no app suspension except the *pause in foreground then lock* case; ads pause on backgrounding. Findings added to spike-findings.md. |
 | 2026-10-14 | S0 | Spike validated background playback, queue advance, lock-screen next/previous (Media Session), pause/resume (keep-alive AudioContext), hidden 1×1 web view. Fork `emoonadev/kaset` created, branch `feat/ios-port` pushed. Plan, tracker and ADR written. |
