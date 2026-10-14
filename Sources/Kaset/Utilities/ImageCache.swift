@@ -1,4 +1,3 @@
-import AppKit
 import CoreGraphics
 import CryptoKit
 import Foundation
@@ -22,12 +21,12 @@ actor ImageCache {
     /// `NSCache` is thread-safe, so the memory tier can be read synchronously
     /// from the main thread (see `cachedImage(for:targetSize:)`) without an
     /// actor hop — AppKit cells that are rebuilt during scrolling rely on that.
-    nonisolated(unsafe) private let memoryCache = NSCache<NSString, NSImage>()
+    nonisolated(unsafe) private let memoryCache = NSCache<NSString, PlatformImage>()
     // swiftformat:enable modifierOrder
     /// Keyed by URL + target size (the memory-cache key), so an in-flight
     /// 320×180 fetch is not awaited by a 1280×720 request and handed back the
     /// small downsampled image.
-    private var inFlight: [NSString: Task<NSImage?, Never>] = [:]
+    private var inFlight: [NSString: Task<PlatformImage?, Never>] = [:]
     private var rawDataInFlight: [String: Task<Data?, Never>] = [:]
     private let fileManager = FileManager.default
     private let session: URLSession
@@ -103,11 +102,11 @@ actor ImageCache {
     ///   - targetSize: Optional target size for downsampling. If provided, the image will be
     ///                 downsampled to fit this size, significantly reducing memory usage.
     /// Synchronous memory-cache lookup; returns nil on a miss without loading.
-    nonisolated func cachedImage(for url: URL, targetSize: CGSize? = nil) -> NSImage? {
+    nonisolated func cachedImage(for url: URL, targetSize: CGSize? = nil) -> PlatformImage? {
         self.memoryCache.object(forKey: Self.memoryKey(for: url, targetSize: targetSize))
     }
 
-    func image(for url: URL, targetSize: CGSize? = nil) async -> NSImage? {
+    func image(for url: URL, targetSize: CGSize? = nil) async -> PlatformImage? {
         // Memory cache is keyed by URL *and* target size: the same thumbnail is
         // requested at different sizes (Home cards at 320×180, the watch
         // placeholder at 1280×720). Keying by URL alone let the first small
@@ -127,7 +126,7 @@ actor ImageCache {
             return await existing.value
         }
 
-        let task = Task<NSImage?, Never> { [self] in
+        let task = Task<PlatformImage?, Never> { [self] in
             // Disk holds the raw bytes (URL-keyed) and re-decodes at the
             // requested size, so different sizes share one download but get
             // distinct decodes. loadFromDisk is nonisolated (immutable state),
@@ -237,10 +236,10 @@ actor ImageCache {
 
     // MARK: - Image Creation with Downsampling
 
-    /// Creates an NSImage from data, optionally downsampling for memory efficiency.
-    private static func createImage(from data: Data, targetSize: CGSize?) -> NSImage? {
+    /// Creates a platform image from data, optionally downsampling for memory efficiency.
+    private static func createImage(from data: Data, targetSize: CGSize?) -> PlatformImage? {
         guard let targetSize else {
-            return NSImage(data: data)
+            return PlatformImage.decoded(from: data)
         }
 
         // Use ImageIO for memory-efficient downsampling
@@ -249,7 +248,7 @@ actor ImageCache {
         ]
 
         guard let source = CGImageSourceCreateWithData(data as CFData, options as CFDictionary) else {
-            return NSImage(data: data)
+            return PlatformImage.decoded(from: data)
         }
 
         let maxDimension = max(targetSize.width, targetSize.height) * 2 // Account for Retina
@@ -264,10 +263,10 @@ actor ImageCache {
             source, 0, downsampleOptions as CFDictionary
         )
         else {
-            return NSImage(data: data)
+            return PlatformImage.decoded(from: data)
         }
 
-        return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        return PlatformImage.wrapping(cgImage)
     }
 
     /// Clears the memory cache.
@@ -328,7 +327,7 @@ actor ImageCache {
     /// `createImage` — run concurrently across cores instead of serializing on
     /// the `ImageCache` actor (every visible card used to queue its decode
     /// behind the others). Touches only immutable state (`diskCacheURL`).
-    nonisolated private func loadFromDisk(url: URL, targetSize: CGSize? = nil) -> NSImage? {
+    nonisolated private func loadFromDisk(url: URL, targetSize: CGSize? = nil) -> PlatformImage? {
         let path = self.diskCachePath(for: url)
         guard let data = try? Data(contentsOf: path) else {
             return nil

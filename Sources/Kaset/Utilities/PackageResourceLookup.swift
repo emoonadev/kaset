@@ -1,29 +1,33 @@
-import AppKit
 import SwiftUI
+
+/// Anchors `Bundle(for:)` to the module that owns the resources.
+private final class BundleToken {}
 
 enum PackageResourceLookup {
     private static let resourceBundleName = "Kaset_Kaset.bundle"
-    private static let accentColorName = NSColor.Name("AccentColor")
+    private static let accentColorName = "AccentColor"
 
     static let bundle = Self.candidateBundles.first
     static let localizationBundle = Self.bundle
 
-    /// The brand accent as an AppKit color, for views built with AppKit (e.g. NSTableView cells).
-    static let brandAccentNSColor: NSColor = {
-        if let color = NSColor(named: accentColorName, bundle: Bundle.main) {
-            return color
+    /// The brand accent as a platform colour, for views built with AppKit/UIKit (e.g. table cells).
+    static let brandAccentNSColor: PlatformColor = {
+        for bundle in [Bundle.main] + candidateBundles {
+            #if os(macOS)
+                if let color = NSColor(named: NSColor.Name(accentColorName), bundle: bundle) {
+                    return color
+                }
+            #else
+                if let color = UIColor(named: accentColorName, in: bundle, compatibleWith: nil) {
+                    return color
+                }
+            #endif
         }
 
-        for bundle in candidateBundles {
-            if let color = NSColor(named: accentColorName, bundle: bundle) {
-                return color
-            }
-        }
-
-        return NSColor(srgbRed: 1.0, green: 0.0, blue: 0.337, alpha: 1.0)
+        return PlatformColor(red: 1.0, green: 0.0, blue: 0.337, alpha: 1.0)
     }()
 
-    static let brandAccent = Color(nsColor: Self.brandAccentNSColor)
+    static let brandAccent = Color(platformColor: Self.brandAccentNSColor)
 
     private static let bundleSearchRoots: [Bundle] = {
         var bundles: [Bundle] = [Bundle.main]
@@ -48,7 +52,7 @@ enum PackageResourceLookup {
         // 1. Try to find the bundle via current module reference (most reliable)
         // In SwiftPM, targets with resources have a generated Bundle.module.
         // We use a known class from this target to find the right bundle.
-        let classBundle = Bundle(for: WebKitManager.self)
+        let classBundle = Bundle(for: BundleToken.self)
         if let moduleBundleURL = classBundle.resourceURL?.appendingPathComponent(Self.resourceBundleName),
            let moduleBundle = Bundle(url: moduleBundleURL)
         {

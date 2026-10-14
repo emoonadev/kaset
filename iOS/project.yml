@@ -21,6 +21,22 @@ targets:
     platform: iOS
     sources:
       - path: ../Sources/KasetiOS
+      - path: ../Sources/Kaset/Models
+        excludes:
+          - YouTube # video mode is out of v1 scope (D4); also needs `package` access into YouTubeAskCore
+          - AI # S3+: needs FoundationModelsService / CommandExecutor (D4: no AI in v1)
+      - path: ../Sources/Kaset/Utilities
+        excludes:
+          - MainWindowLayout.swift # AppKit window metrics
+          - TextInputFocusState.swift # AppKit first responder
+          - PlayerBarLayout.swift # depends on MainWindowLayout; replaced by an iOS mini player
+          - LiquidGlassCompat.swift # macOS 15 fallback; iOS 26 uses glassEffect directly
+          - IntelligenceModifier.swift # needs FoundationModelsService (D4)
+          - AccessibilityIdentifiers.swift # extends a type declared in a macOS view; revisit in S7
+      # Small service files the shared Models depend on.
+      - path: ../Sources/Kaset/Services/API/Parsers/ParsingHelpers.swift
+      - path: ../Sources/Kaset/Services/API/Parsers/ParsingHelpers+Metadata.swift
+      - path: ../Sources/Kaset/Services/Library/LibraryContentIdentity.swift
     dependencies:
       - package: Kaset
         product: YouTubeAskCore

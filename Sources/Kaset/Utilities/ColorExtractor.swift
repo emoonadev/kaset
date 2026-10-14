@@ -1,4 +1,3 @@
-import AppKit
 import CoreGraphics
 import SwiftUI
 
@@ -25,9 +24,9 @@ enum ColorExtractor {
 
         /// Default adaptive palette when no image is available.
         static let `default` = ColorPalette(
-            primary: Color(nsColor: NSColor(white: 0.15, alpha: 1)),
-            secondary: Color(nsColor: NSColor(white: 0.08, alpha: 1)),
-            lightTint: Color(nsColor: NSColor.controlAccentColor).opacity(0.3)
+            primary: Color(platformColor: PlatformColor(white: 0.15, alpha: 1)),
+            secondary: Color(platformColor: PlatformColor(white: 0.08, alpha: 1)),
+            lightTint: Color(platformColor: PlatformColor.platformAccent).opacity(0.3)
         )
     }
 
@@ -42,12 +41,12 @@ enum ColorExtractor {
         await ColorPaletteCache.shared.palette(for: url, targetSize: targetSize)
     }
 
-    /// Extracts a color palette from an NSImage.
+    /// Extracts a color palette from a platform image.
     /// Uses k-means clustering on downsampled image for performance.
     /// - Parameter image: The source image.
     /// - Returns: A ColorPalette with primary and secondary colors.
-    static func extractPalette(from image: NSImage) -> ColorPalette {
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+    static func extractPalette(from image: PlatformImage) -> ColorPalette {
+        guard let cgImage = image.platformCGImage else {
             return .default
         }
 
@@ -113,9 +112,9 @@ enum ColorExtractor {
         let lightTint = self.adjustColorForLightMode(r: avgR, g: avgG, b: avgB)
 
         return ColorPalette(
-            primary: Color(nsColor: primary),
-            secondary: Color(nsColor: secondary),
-            lightTint: Color(nsColor: lightTint)
+            primary: Color(platformColor: primary),
+            secondary: Color(platformColor: secondary),
+            lightTint: Color(platformColor: lightTint)
         )
     }
 
@@ -126,7 +125,7 @@ enum ColorExtractor {
         // Perform CPU-intensive color extraction off the main actor.
         // This prevents UI jank during image processing.
         await Task(priority: .userInitiated) {
-            guard let image = NSImage(data: data) else {
+            guard let image = PlatformImage.decoded(from: data) else {
                 return ColorPalette.default
             }
             return Self.extractPalette(from: image)
@@ -152,21 +151,21 @@ enum ColorExtractor {
         g: CGFloat,
         b: CGFloat,
         darken: CGFloat
-    ) -> NSColor {
+    ) -> PlatformColor {
         // Convert to HSB for easier manipulation
-        let nsColor = NSColor(red: r, green: g, blue: b, alpha: 1.0)
+        let baseColor = PlatformColor(red: r, green: g, blue: b, alpha: 1.0)
         var hue: CGFloat = 0
         var saturation: CGFloat = 0
         var brightness: CGFloat = 0
         var alpha: CGFloat = 0
 
-        nsColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        baseColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
 
         // Increase saturation slightly and darken significantly
         let adjustedSaturation = min(saturation * 1.2, 1.0)
         let adjustedBrightness = brightness * (1 - darken)
 
-        return NSColor(
+        return PlatformColor(
             hue: hue,
             saturation: adjustedSaturation,
             brightness: max(adjustedBrightness, 0.05),
@@ -178,22 +177,22 @@ enum ColorExtractor {
         r: CGFloat,
         g: CGFloat,
         b: CGFloat
-    ) -> NSColor {
+    ) -> PlatformColor {
         // Convert to HSB for easier manipulation
-        let nsColor = NSColor(red: r, green: g, blue: b, alpha: 1.0)
+        let baseColor = PlatformColor(red: r, green: g, blue: b, alpha: 1.0)
         var hue: CGFloat = 0
         var saturation: CGFloat = 0
         var brightness: CGFloat = 0
         var alpha: CGFloat = 0
 
-        nsColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        baseColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
 
         // Create a lighter, less saturated pastel version
         // Reduce saturation significantly and increase brightness
         let adjustedSaturation = saturation * 0.4
         let adjustedBrightness = min(brightness * 1.3 + 0.4, 1.0)
 
-        return NSColor(
+        return PlatformColor(
             hue: hue,
             saturation: adjustedSaturation,
             brightness: adjustedBrightness,
