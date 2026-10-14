@@ -11,6 +11,8 @@ struct PlayerLabView: View {
     var body: some View {
         NavigationStack {
             Form {
+                AccountLabSection()
+
                 Section("Track") {
                     TextField("Video id", text: self.$videoId)
                         .textInputAutocapitalization(.never)

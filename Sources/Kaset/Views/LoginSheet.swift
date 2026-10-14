@@ -44,7 +44,9 @@ struct LoginSheet: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(width: 500, height: 650)
+        #if os(macOS)
+            .frame(width: 500, height: 650)
+        #endif
         .alert(
             String(localized: "Sign Out Incomplete"),
             isPresented: self.$signOutFailurePresented

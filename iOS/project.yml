@@ -63,6 +63,8 @@ targets:
         includes:
           - SingletonPlayerWebView*.swift
           - MiniPlayerWebView*.swift
+          - LoginWebView.swift
+          - LoginSheet.swift
       - path: ../Sources/Kaset/Services/SettingsManager.swift
       - path: ../Sources/Kaset/Services/FavoritesManager.swift
       - path: ../Sources/Kaset/Services/FavoritesManager+Convenience.swift
