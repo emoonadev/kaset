@@ -1,5 +1,8 @@
 # Kaset iOS — tracker
 
+> **FROZEN 2026-10-14.** The iOS app now lives in `~/Desktop/Developer/Kaset-iOS` (renamed spike, native
+> SwiftUI). This branch is kept as a reference only; see that repo's `docs/PLAN.md` and `docs/TRACKER.md`.
+
 Plan: [`PLAN.md`](PLAN.md) · Decisions: [ADR-0042](../adr/0042-ios-port-and-background-playback.md) ·
 Branch: `feat/ios-port` on `emoonadev/kaset`.
 
