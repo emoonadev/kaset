@@ -45,6 +45,9 @@ struct KasetiOSApp: App {
                 .environment(self.audioSession)
                 .task {
                     self.audioSession.start(playerService: self.playerService)
+                    // Publishes title/artist to the lock screen and routes the remote commands
+                    // through PlayerService; the page's own Now Playing card takes over when present.
+                    NowPlayingManager.shared.configure(playerService: self.playerService)
                 }
                 .task(id: self.authService.startupState) {
                     // Same startup contract as KasetApp: restore the session from the cookie
